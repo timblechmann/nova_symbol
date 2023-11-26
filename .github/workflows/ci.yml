@@ -1,0 +1,173 @@
+name: Linux builds
+
+# on:
+#   push:
+#     branches:
+#       - master
+#       - develop
+#       - githubactions*
+#       - feature/**
+#       - fix/**
+#       - pr/**
+
+prefix: &prefix
+  - uses: actions/checkout@v2
+
+  - name: ccache
+    uses: hendrikmuhs/ccache-action@v1.1
+    with:
+      key: ${{ matrix.os }}-${{ matrix.compiler }}
+
+  - name: Using the builtin GitHub Cache Action for .conan
+    id: cache-conan
+    uses: actions/cache@v1
+    env:
+      cache-name: cache-conan-modules
+    with:
+      path: ${{ env.CONAN_USER_HOME }}
+      key: ${{ runner.os }}-builder-${{ env.cache-name }}
+      restore-keys: ${{ runner.os }}-builder-${{ env.cache-name }}
+
+  - name: Conan installation
+    id: conan
+    uses: turtlebrowser/get-conan@v1.2
+
+
+jobs:
+  build-linux:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest]
+        compiler: [g++-12, g++-13]
+
+    env:
+      CONAN_USER_HOME: "${{ github.workspace }}/release/"
+      CONAN_USER_HOME_SHORT: "${{ github.workspace }}/release/short"
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.1
+        with:
+          key: ${{ matrix.os }}-${{ matrix.compiler }}
+
+      - name: Using the builtin GitHub Cache Action for .conan
+        id: cache-conan
+        uses: actions/cache@v1
+        env:
+          cache-name: cache-conan-modules
+        with:
+          path: ${{ env.CONAN_USER_HOME }}
+          key: ${{ runner.os }}-builder-${{ env.cache-name }}
+          restore-keys: ${{ runner.os }}-builder-${{ env.cache-name }}
+
+      - name: Conan installation
+        id: conan
+        uses: turtlebrowser/get-conan@v1.2
+
+      - name: Configure, Build, and Test Project
+        uses: threeal/cmake-action@v1.3.0
+        with:
+          run-build: true
+          run-test: true
+          options: CMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/conan_provider.cmake CMAKE_BUILD_TYPE=Release CMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+        env:
+          CXX: ${{ matrix.compiler }}
+
+  build-macos:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [macos-13]
+        compiler: ['15.0.1', '14.3.1', '14.2']
+
+    env:
+      CONAN_USER_HOME: "${{ github.workspace }}/release/"
+      CONAN_USER_HOME_SHORT: "${{ github.workspace }}/release/short"
+      SDKROOT: /Applications/Xcode_${{ matix.compiler}}.app//Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.1
+        with:
+          key: ${{ matrix.os }}-${{ matrix.compiler }}
+
+      - name: Using the builtin GitHub Cache Action for .conan
+        id: cache-conan
+        uses: actions/cache@v1
+        env:
+          cache-name: cache-conan-modules
+        with:
+          path: ${{ env.CONAN_USER_HOME }}
+          key: ${{ runner.os }}-builder-${{ env.cache-name }}
+          restore-keys: ${{ runner.os }}-builder-${{ env.cache-name }}
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ matrix.compiler }}
+
+      - name: Conan installation
+        id: conan
+        uses: turtlebrowser/get-conan@v1.2
+
+      - name: Configure, Build, and Test Project
+        uses: threeal/cmake-action@v1.3.0
+        with:
+          run-build: true
+          run-test: true
+          options: CMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/conan_provider.cmake CMAKE_BUILD_TYPE=Release CMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+  build-msvc:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [windows-latest]
+
+    env:
+      CONAN_USER_HOME: "${{ github.workspace }}/release/"
+      CONAN_USER_HOME_SHORT: "${{ github.workspace }}/release/short"
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.1
+        with:
+          key: ${{ matrix.os }}-${{ matrix.compiler }}
+
+      - name: Using the builtin GitHub Cache Action for .conan
+        id: cache-conan
+        uses: actions/cache@v1
+        env:
+          cache-name: cache-conan-modules
+        with:
+          path: ${{ env.CONAN_USER_HOME }}
+          key: ${{ runner.os }}-builder-${{ env.cache-name }}
+          restore-keys: ${{ runner.os }}-builder-${{ env.cache-name }}
+
+      - name: Conan installation
+        id: conan
+        uses: turtlebrowser/get-conan@v1.2
+
+      - uses: seanmiddleditch/gha-setup-ninja@master
+
+      - uses: TheMrMilchmann/setup-msvc-dev@v3
+        with:
+          arch: x64
+          toolset: ${{matrix.compiler}}
+
+      - name: Configure, Build, and Test Project
+        uses: threeal/cmake-action@v1.3.0
+        with:
+          run-build: true
+          run-test: true
+          generator: Ninja
+          options: CMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/conan_provider.cmake CMAKE_BUILD_TYPE=Release CMAKE_CXX_COMPILER_LAUNCHER=ccache
