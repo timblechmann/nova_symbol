@@ -22,7 +22,8 @@
 //
 // As a non-binding request, please use this code responsibly and ethically.
 
-
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <string_view>
 #include <version>
@@ -171,7 +172,37 @@ symbol make_symbol_from_hana_string( BoostHanaString )
 
 namespace symbol_literals {
 
-#ifdef __GNUC__
+#if ( __cplusplus >= 202002L )
+
+namespace detail {
+
+template < size_t N >
+struct literal_storage
+{
+    // NOLINTNEXTLINE(google-explicit-constructor)
+    consteval literal_storage( const char ( &str )[ N ] )
+    {
+        std::copy_n( str, N, data.begin() );
+    }
+    std::array< char, N > data;
+};
+
+template < size_t N >
+literal_storage( const char ( & )[ N ] ) -> literal_storage< N >;
+
+} // namespace detail
+
+template < detail::literal_storage S >
+inline symbol operator""_sym() noexcept
+{
+    static const symbol singleton = symbol {
+        std::string_view { S.data.data(), S.data.size() - 1 },
+        string_data_in_persistent_memory,
+    };
+    return singleton;
+}
+
+#elif defined( __GNUC__ )
 
 #    pragma clang diagnostic push
 #    pragma clang diagnostic ignored "-Wgnu-string-literal-operator-template"
