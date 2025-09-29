@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.25)
 
+# Set policies
+cmake_policy(SET CMP0167 NEW) # The FindBoost module is removed
+
 project(nova_symbol VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
