@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <mutex>
 
 #ifdef __cpp_lib_memory_resource
 #    include <memory_resource>
