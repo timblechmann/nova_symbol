@@ -89,8 +89,8 @@ struct symbol_data : boost::intrusive::unordered_set_base_hook<>
     }
 
 private:
-    static constexpr auto ownership_bitmask = std::intptr_t( 1 );
-    static constexpr auto content_bitmask   = std::intptr_t( -1 ) ^ ownership_bitmask;
+    static constexpr auto   ownership_bitmask      = std::intptr_t( 1 );
+    static constexpr auto   content_bitmask        = std::intptr_t( -1 ) ^ ownership_bitmask;
     static constexpr size_t size_ownership_bitmask = sizeof( size_t ) == 8 ? ( size_t( 1 ) << 63 )
                                                                            : ( size_t( 1 ) << 31 );
 

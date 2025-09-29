@@ -1,6 +1,6 @@
 # Nova symbol
 
-Symbols are hashed strings, which are found in many programming languages like lisp, smalltalk (or derived/inspired 
+Symbols are hashed strings, which are found in many programming languages like lisp, smalltalk (or derived/inspired
 languages):
 
 * immutable (flyweight design pattern)
