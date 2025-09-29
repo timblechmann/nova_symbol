@@ -1,7 +1,7 @@
 [requires]
-boost/1.83.0
-catch2/3.4.0
-cityhash/cci.20130801
+boost/1.88.0
+catch2/3.10.0
+cityhash/1.0.1
 
 [generators]
 CMakeDeps
@@ -13,6 +13,7 @@ cmake_layout
 [options]
 boost*:without_atomic=True
 boost*:without_chrono=True
+boost*:without_cobalt=True
 boost*:without_container=False
 boost*:without_contract=True
 boost*:without_coroutine=True
@@ -29,6 +30,7 @@ boost*:without_log=True
 boost*:without_math=True
 boost*:without_mpi=True
 boost*:without_nowide=True
+boost*:without_process=True
 boost*:without_program_options=True
 boost*:without_python=True
 boost*:without_random=True
