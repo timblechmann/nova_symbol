@@ -89,11 +89,6 @@ private:
 
 DEFINE_OPERATOR( == )
 DEFINE_OPERATOR( != )
-DEFINE_OPERATOR( < )
-DEFINE_OPERATOR( <= )
-DEFINE_OPERATOR( > )
-DEFINE_OPERATOR( >= )
-DEFINE_OPERATOR( <=> )
 
 #undef DEFINE_OPERATOR
 
@@ -101,12 +96,57 @@ DEFINE_OPERATOR( <=> )
 
 namespace symbol_support {
 
+struct hash_less
+{
+    using is_transparent = std::true_type;
+
+    static uint64_t hash( const std::string_view& arg )
+    {
+        return symbol::s_hash( arg );
+    }
+
+    static uint64_t hash( const symbol& arg )
+    {
+        return arg.hash();
+    }
+
+    static bool less_after_hash_equality_hash( const symbol& lhs, const symbol& rhs )
+    {
+        if ( lhs <=> rhs == std::strong_ordering::equal )
+            return false;
+        return std::string_view( lhs ) < std::string_view( rhs );
+    }
+
+    static bool less_after_hash_equality_hash( const auto& lhs, const auto& rhs )
+    {
+        return std::string_view( lhs ) < std::string_view( rhs );
+    }
+
+    bool operator()( const auto& lhs, const auto& rhs ) const
+    {
+        auto hash_compare = hash( lhs ) <=> hash( rhs );
+
+        switch ( hash_compare ) {
+        case std::strong_ordering::less:    return true;
+        case std::strong_ordering::greater: return false;
+        case std::strong_ordering::equal:   return compare_equal_hash( lhs, rhs );
+        }
+    }
+};
+
+
 struct lexical_less
 {
     using is_transparent = std::true_type;
 
     bool operator()( const auto& lhs, const auto& rhs ) const
     {
+        return std::string_view( lhs ) < std::string_view( rhs );
+    }
+    uint64_t operator()( nova::symbol lhs, nova::symbol rhs ) const
+    {
+        if ( lhs == rhs )
+            return false;
         return std::string_view( lhs ) < std::string_view( rhs );
     }
 };
@@ -196,7 +236,10 @@ template < detail::literal_storage S >
 inline symbol operator""_sym() noexcept
 {
     static const symbol singleton = symbol {
-        std::string_view { S.data.data(), S.data.size() - 1 },
+        std::string_view {
+            S.data.data(),
+            S.data.size() - 1,
+        },
         string_data_in_persistent_memory,
     };
     return singleton;
