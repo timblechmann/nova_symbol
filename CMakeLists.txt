@@ -5,7 +5,9 @@ cmake_policy(SET CMP0167 NEW) # The FindBoost module is removed
 
 project(nova_symbol VERSION 0.1.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+if (NOT CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 20)
+endif()
 
 ########################################################################################################################
 
@@ -41,8 +43,8 @@ add_library(nova_symbol STATIC ${Sources})
 
 target_include_directories(nova_symbol PUBLIC inc)
 target_link_libraries(nova_symbol
-    PUBLIC  Boost::headers
-    PRIVATE cityhash::cityhash
+    PRIVATE Boost::headers
+            cityhash::cityhash
 )
 
 if (APPLE)

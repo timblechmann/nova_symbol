@@ -32,8 +32,6 @@
 #    include <format>
 #endif
 
-#include <boost/hana/string.hpp>
-
 namespace nova {
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -184,35 +182,7 @@ struct lexical_equal_to
 
 //----------------------------------------------------------------------------------------------------------------------
 
-namespace detail {
-
-template < char... s >
-constexpr inline char const string_storage[ sizeof...( s ) ] = { s... };
-
-template < char... s >
-symbol make_symbol()
-{
-    static const symbol singleton = symbol( std::string_view( detail::string_storage< s... >, sizeof...( s ) ),
-                                            string_data_in_persistent_memory );
-    return singleton;
-}
-
-template < typename BoostHanaString >
-symbol make_symbol_from_hana_string( BoostHanaString )
-{
-    static const symbol singleton = symbol {
-        std::string_view { BoostHanaString::c_str() },
-        string_data_in_persistent_memory,
-    };
-    return singleton;
-}
-
-
-} // namespace detail
-
 namespace symbol_literals {
-
-#if ( __cplusplus >= 202002L )
 
 namespace detail {
 
@@ -245,39 +215,9 @@ inline symbol operator""_sym() noexcept
     return singleton;
 }
 
-#elif defined( __GNUC__ )
-
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wgnu-string-literal-operator-template"
-
-template < typename Char, Char... s >
-inline symbol operator"" _sym()
-{
-    return nova::detail::make_symbol< s... >();
-}
-
-#    pragma clang diagnostic pop
-
-#else
-
-inline symbol operator""_sym( const char* literal, size_t size )
-{
-    return symbol(
-        std::string_view {
-            literal,
-            size,
-        },
-        nova::string_data_in_persistent_memory );
-}
-
-#endif
-
 } // namespace symbol_literals
 
 //----------------------------------------------------------------------------------------------------------------------
-
-
-#define NOVA_SYMBOL( s ) nova::detail::make_symbol_from_hana_string( BOOST_HANA_STRING( s ) )
 
 } // namespace nova
 

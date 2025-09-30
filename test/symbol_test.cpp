@@ -11,17 +11,14 @@ TEST_CASE( "symbol" )
     nova::symbol a( "a" );
     nova::symbol a_2( std::string_view { "a" } );
     nova::symbol a_3 = "a"_sym;
-    nova::symbol a_4 = NOVA_SYMBOL( "a" );
 
     CHECK( a == a_2 );
     CHECK( a == a_3 );
-    CHECK( a == a_4 );
 
     nova::symbol b( "b" );
 
     CHECK( b != a_2 );
     CHECK( b != a_3 );
-    CHECK( b != a_4 );
 
     CHECK( a == "a" );
     CHECK( a == std::string_view( "a" ) );
