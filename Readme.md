@@ -34,8 +34,8 @@ struct nova::symbol
 
 // construction:
 using namespace nova::symbol_literals;      // for _sym
-nova::symbol sym  = "symbol"_sym;           // clang/gcc implement ""_sym via non-standard extensions, making it a singleton
-nova::symbol sym2 = NOVA_SYMBOL("symbol2"); // singleton-based factory (preferred for supporting msvc)
+nova::symbol sym  = "symbol"_sym;           // user-defined literal
+nova::symbol sym2 = NOVA_SYMBOL("symbol2"); // singleton-based factory
 nova::symbol sym3 = nova::symbol{"symbol"}; // expensive, due to hash table lookup/insertion
 
 // (fast) symbol comparision (comparing pointers):
@@ -43,12 +43,13 @@ bool equal = sym == sym2;
 bool less  = sym < sym2; // ordering is stable, but not persistent across restarting the process
 
 // (slower) string comparison
-bool equal = sym == "symbol"; // comparing the string representation of the symbol
+bool equal = sym == "symbol"; // comparing the hash value
 
 // support structs:
 struct nova::symbol_support::lexical_less;     // transparent lexical comparison
 struct nova::symbol_support::lexical_hash;     // transparent hasher
 struct nova::symbol_support::lexical_equal_to; // transparent lexical equality
+struct nova::symbol_support::hash_less;        // transparent comparison using hash value
 
 // formatting
 auto string = std::format("{}", sym);
