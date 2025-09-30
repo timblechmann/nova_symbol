@@ -16,7 +16,7 @@ languages):
 struct nova::symbol
 {
     explicit symbol( const std::string_view& );
-    explicit symbol( const std::string_view&, string_data_in_persistent_memory_t ); // expects string data to be persisten
+    explicit symbol( const std::string_view&, string_data_in_persistent_memory_t ); // expects string data to be persistent
 
     symbol( symbol&& )                 = default;
     symbol& operator=( const symbol& ) = default;
@@ -35,8 +35,7 @@ struct nova::symbol
 // construction:
 using namespace nova::symbol_literals;      // for _sym
 nova::symbol sym  = "symbol"_sym;           // user-defined literal
-nova::symbol sym2 = NOVA_SYMBOL("symbol2"); // singleton-based factory
-nova::symbol sym3 = nova::symbol{"symbol"}; // expensive, due to hash table lookup/insertion
+nova::symbol sym2 = nova::symbol{"symbol"}; // expensive, due to hash table lookup/insertion. user-defined literal is preferred
 
 // (fast) symbol comparision (comparing pointers):
 bool equal = sym == sym2;
@@ -58,7 +57,7 @@ auto string = fmt::format("{}", sym);
 
 # Dependencies
 * C++20 (ideally with pmr, boost.container can be used for pmr emulation)
-* Boost (for instrusive hash table, compile-time strings and pmr emulation)
+* Boost (for instrusive hash table and pmr emulation)
 * Cityhash (for string hashing)
 * Catch2 (for unit tests)
 
