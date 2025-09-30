@@ -259,7 +259,7 @@ struct std::formatter< nova::symbol, char > : std::formatter< std::string_view >
 #    include <fmt/format.h>
 
 template <>
-struct std::formatter< nova::symbol, char > : std::formatter< std::string_view >
+struct fmt::formatter< nova::symbol, char > : fmt::formatter< std::string_view >
 {
     template < typename FormatContext >
     auto format( const nova::symbol& symbol, FormatContext& ctx ) const -> decltype( ctx.out() )
