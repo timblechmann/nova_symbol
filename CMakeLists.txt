@@ -64,7 +64,7 @@ if (NOVA_SYMBOL_USE_CPM)
         set(BOOST_INCLUDE_LIBRARIES intrusive container)
         FetchContent_MakeAvailable(Boost)
     endif()
-    CPMAddPackage("gh:catchorg/Catch2#v3.10.0")
+    CPMAddPackage("gh:catchorg/Catch2#v3.11.0")
 
     CPMAddPackage(
         NAME Cityhash
