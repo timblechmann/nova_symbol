@@ -197,9 +197,6 @@ struct literal_storage
     std::array< char, N > data;
 };
 
-template < size_t N >
-literal_storage( const char ( & )[ N ] ) -> literal_storage< N >;
-
 } // namespace detail
 
 template < detail::literal_storage S >
