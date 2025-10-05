@@ -71,11 +71,23 @@ jobs:
       - name: Install Conan
         uses: conan-io/setup-conan@v1
 
-      - name: Configure, Build, and Test Project
+      - name: Configure, Build, and Test Project (conan)
         run: |
           mkdir -p build
           cd build
           cmake .. -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/conan_provider.cmake \
+                   -DCMAKE_BUILD_TYPE=Release \
+                   -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+                   -DNOVA_SYMBOL_USE_CPM=OFF \
+                   -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+          cmake --build . --parallel
+          ctest --output-on-failure
+
+      - name: Configure, Build, and Test Project (CPM)
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DNOVA_SYMBOL_USE_CPM=ON \
                    -DCMAKE_BUILD_TYPE=Release \
                    -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
                    -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
@@ -131,6 +143,7 @@ jobs:
           cd build
           cmake .. -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/conan_provider.cmake \
                    -DCMAKE_BUILD_TYPE=Release \
+                   -DNOVA_SYMBOL_USE_CPM=OFF \
                    -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build . --parallel
           ctest --output-on-failure
@@ -185,6 +198,6 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/conan_provider.cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -G "Ninja"
+          cmake .. -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/conan_provider.cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DNOVA_SYMBOL_USE_CPM=OFF -G "Ninja"
           cmake --build . --parallel
           ctest --output-on-failure
