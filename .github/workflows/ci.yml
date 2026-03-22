@@ -1,18 +1,17 @@
-name: CI
+name: CI builds
 
 on:
   push:
-    branches:
-      - master
-      - develop
-      - githubactions*
-      - feature/**
-      - fix/**
-      - pr/**
+    branches: [main]
   pull_request:
-    branches:
-      - master
-      - develop
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 
 jobs:
@@ -21,183 +20,117 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        include:
-          - os: ubuntu-24.04
-            compiler: g++-13
-          - os: ubuntu-24.04
-            compiler: g++-14
-          # - os: ubuntu-24.04
-          #   compiler: clang-17
+        os: [ubuntu-24.04]
+        compiler: [g++-12, g++-13, g++-12, g++-14, clang++-16, clang++-17, clang++-18]
+        arch: [x64, arm64]
 
     env:
-      CONAN_USER_HOME: "${{ github.workspace }}/conan/"
-      CONAN_USER_HOME_SHORT: "${{ github.workspace }}/conan/short"
+      CPM_SOURCE_CACHE: "${{ github.workspace }}/.cpm-cache"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          if [[ "${{ matrix.compiler }}" == clang++* ]]; then
-            # For clang, install the base package
-            CLANG_VERSION=$(echo "${{ matrix.compiler }}" | sed 's/clang++-//')
-            sudo apt-get install -y clang-${CLANG_VERSION}
-          else
-            sudo apt-get install -y ${{ matrix.compiler }}
-          fi
-
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.21
         with:
-          key: ${{ matrix.os }}-${{ matrix.compiler }}
+          key: ${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.arch }}
 
-      - name: Cache Conan packages
-        uses: actions/cache@v4
+      - name: Using the GitHub Cache Action for CPM sources
+        id: cache-cpm
+        uses: actions/cache@v5
+        env:
+          cache-name: cache-cpm-modules
         with:
-          path: ${{ env.CONAN_USER_HOME }}
-          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.txt') }}
-          restore-keys: conan-${{ runner.os }}-
-
-      - name: Cache ccache
-        uses: actions/cache@v4
-        with:
-          path: ~/.ccache
-          key: ${{ runner.os }}-${{ matrix.compiler }}-ccache-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ matrix.compiler }}-${{ matrix.arch }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.compiler }}-ccache-
+            ${{ runner.os }}-builder-${{ env.cache-name }}-
+            ${{ runner.os }}-builder-
 
+      - name: Create CPM cache dir
+        run: mkdir -p ${{ env.CPM_SOURCE_CACHE }}
 
-      - name: Install Conan
-        uses: conan-io/setup-conan@v1
-
-      - name: Configure, Build, and Test Project (conan)
-        run: |
-          mkdir -p build
-          cd build
-          cmake .. -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/conan_provider.cmake \
-                   -DCMAKE_BUILD_TYPE=Release \
-                   -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-                   -DNOVA_SYMBOL_USE_CPM=OFF \
-                   -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
-          cmake --build . --parallel
-          ctest --output-on-failure
-
-      - name: Configure, Build, and Test Project (CPM)
-        run: |
-          mkdir -p build
-          cd build
-          cmake .. -DNOVA_SYMBOL_USE_CPM=ON \
-                   -DCMAKE_BUILD_TYPE=Release \
-                   -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-                   -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
-          cmake --build . --parallel
-          ctest --output-on-failure
+      - name: Configure, Build, and Test Project
+        uses: threeal/cmake-action@v1.3.0
+        with:
+          run-build: true
+          run-test: true
+          options: CMAKE_BUILD_TYPE=Release CMAKE_CXX_COMPILER_LAUNCHER=ccache CMAKE_CXX_COMPILER=${{ matrix.compiler }}
 
   build-macos:
+    needs: build-windows
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
-        os: [macos-14]
-        xcode: ['15.0.1', '15.2']
+        os: [macos-15, macos-15, macos-26]
 
     env:
-      CONAN_USER_HOME: "${{ github.workspace }}/conan/"
-      CONAN_USER_HOME_SHORT: "${{ github.workspace }}/conan/short"
+      CPM_SOURCE_CACHE: "${{ github.workspace }}/.cpm-cache"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.21
         with:
-          xcode-version: ${{ matrix.xcode }}
+          key: ${{ matrix.os }}-${{ matrix.compiler }}
 
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+      - uses: maxim-lobanov/setup-xcode@v1
         with:
-          key: ${{ matrix.os }}-${{ matrix.xcode }}
+          xcode-version: ${{ matrix.compiler }}
 
-      - name: Cache ccache
-        uses: actions/cache@v4
-        with:
-          path: ~/.ccache
-          key: ${{ runner.os }}-${{ matrix.compiler }}-ccache-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.compiler }}-ccache-
-
-      - name: Cache Conan packages
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.CONAN_USER_HOME }}
-          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.txt') }}
-          restore-keys: conan-${{ runner.os }}-
-
-      - name: Install Conan
-        uses: conan-io/setup-conan@v1
+      - name: Create CPM cache dir
+        run: mkdir -p ${{ env.CPM_SOURCE_CACHE }}
 
       - name: Configure, Build, and Test Project
-        run: |
-          mkdir -p build
-          cd build
-          cmake .. -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/conan_provider.cmake \
-                   -DCMAKE_BUILD_TYPE=Release \
-                   -DNOVA_SYMBOL_USE_CPM=OFF \
-                   -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build . --parallel
-          ctest --output-on-failure
+        uses: threeal/cmake-action@v1.3.0
+        with:
+          run-build: true
+          run-test: true
+          options: CMAKE_BUILD_TYPE=Release CMAKE_CXX_COMPILER_LAUNCHER=ccache
 
   build-windows:
-    runs-on: windows-latest
+    needs: build-linux
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
-        arch: [x64, x86]
+        include:
+          - { os: windows-2025-vs2026, arch: x64, toolset: "14.50", build_type: Release } # msvc 2026
+          - { os: windows-2025,        arch: x64, toolset: "14.44", build_type: Release } # msvc 2022
 
     env:
-      CONAN_USER_HOME: "${{ github.workspace }}/conan/"
-      CONAN_USER_HOME_SHORT: "${{ github.workspace }}/conan/short"
+      CPM_SOURCE_CACHE: "${{ github.workspace }}/.cpm-cache"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+      - name: Cache CPM sources
+        uses: actions/cache@v5
         with:
-          key: windows-${{ matrix.arch }}
+          path: ${{ runner.temp }}/cpm-cache
+          key: cpm-${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: cpm-${{ runner.os }}-${{ matrix.arch }}-
+
+      - name: Set up sccache
+        uses: hendrikmuhs/ccache-action@v1.2.21
+        with:
+          key: windows-${{ matrix.arch }}-${{ matrix.build_type }}
           variant: sccache
 
-      - name: Cache sccache
-        uses: actions/cache@v4
-        with:
-          path: ~\AppData\Local\Mozilla\sccache
-          key: ${{ runner.os }}-${{ matrix.arch }}-sccache-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.arch }}-sccache-
-
-      - name: Cache Conan packages
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.CONAN_USER_HOME }}
-          key: conan-${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('conanfile.txt') }}
-          restore-keys: conan-${{ runner.os }}-${{ matrix.arch }}-
-
-      - name: Install Conan
-        uses: conan-io/setup-conan@v1
-
-      - name: Install Ninja
-        run: choco install ninja
-
-      - name: Setup MSVC
-        uses: TheMrMilchmann/setup-msvc-dev@v3
+      - name: Set up MSVC
+        uses: TheMrMilchmann/setup-msvc-dev@v4
         with:
           arch: ${{ matrix.arch }}
+          toolset: ${{ matrix.toolset }}
 
-      - name: Configure, Build, and Test Project
+      - name: Configure, build, and test
+        env:
+          CPM_SOURCE_CACHE: ${{ runner.temp }}/cpm-cache
         run: |
-          mkdir build
-          cd build
-          cmake .. -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/conan_provider.cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DNOVA_SYMBOL_USE_CPM=OFF -G "Ninja"
-          cmake --build . --parallel
-          ctest --output-on-failure
+          cmake -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          cmake --build build --parallel
+          ctest --test-dir build --output-on-failure
