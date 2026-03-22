@@ -63,12 +63,8 @@ auto string = fmt::format("{}", sym);
 
 # Building
 
-Integrate Conan via
 ```
-cmake -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/conan_provider.cmake [...] -DNOVA_SYMBOL_USE_CPM=OFF
-```
-
-Alternatively, use CPM.cmake (preferred) via
-```
-cmake -DNOVA_SYMBOL_USE_CPM=ON [...]
+cmake -B build
+cmake --build build
+ctest --test-dir build
 ```
