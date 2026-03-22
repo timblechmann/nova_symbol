@@ -13,6 +13,7 @@ endif()
 
 add_custom_target(nova_symbol_project_files SOURCES
     .clang-tidy
+    .gitignore
     .pre-commit-config.yaml
     _clang-format
     conanfile.txt
