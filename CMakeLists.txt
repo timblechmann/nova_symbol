@@ -23,6 +23,18 @@ add_custom_target(nova_symbol_project_files SOURCES
 
 ########################################################################################################################
 
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles([[
+    #include <version>
+    int main() {
+    static_assert(__cpp_lib_memory_resource);
+    }
+    ]] NOVA_PMR_COMPILES)
+
+########################################################################################################################
+
+
+
 function(nova_symbol_install_cpm)
     if (NOT COMMAND CPMAddPackage)
         set(CPM_DOWNLOAD_VERSION 0.42.1)
@@ -37,8 +49,32 @@ function(nova_symbol_install_cpm)
     endif()
 endfunction()
 
-if(NOT (TARGET Boost::headers AND TARGET Boost::intrusive AND (NOT APPLE OR TARGET Boost::container)))
+set(NeedBoostContainer OFF)
+if(APPLE AND NOT NOVA_PMR_COMPILES)
+    set(NeedBoostContainer ON)
+endif()
+
+set(HasBoost TRUE)
+if(NOT TARGET Boost::headers)
+    set(HasBoost FALSE)
+endif()
+if(NOT TARGET Boost::intrusive)
+    set(HasBoost FALSE)
+endif()
+if(NeedBoostContainer)
+    if(NOT TARGET Boost::container)
+        set(HasBoost FALSE)
+    endif()
+endif()
+
+if(NOT Boost::headers)
     nova_symbol_install_cpm()
+    if(NeedBoostContainer)
+        set(_boost_include_option "BOOST_INCLUDE_LIBRARIES intrusive\\;container")
+    else()
+        set(_boost_include_option "BOOST_INCLUDE_LIBRARIES intrusive")
+    endif()
+
     CPMAddPackage(
         NAME Boost
         VERSION 1.90.0
@@ -46,7 +82,7 @@ if(NOT (TARGET Boost::headers AND TARGET Boost::intrusive AND (NOT APPLE OR TARG
         URL_HASH SHA256=aca59f889f0f32028ad88ba6764582b63c916ce5f77b31289ad19421a96c555f
         OPTIONS "BOOST_SKIP_INSTALL_RULES ON"
                 "BUILD_SHARED_LIBS OFF"
-                "BOOST_INCLUDE_LIBRARIES intrusive\\;container"
+                ${_boost_include_option}
     )
 endif()
 
@@ -91,12 +127,11 @@ if(TARGET Boost::intrusive)
         PRIVATE Boost::intrusive)
 endif()
 
-if (APPLE)
+if(NOT NOVA_PMR_COMPILES)
     target_link_libraries(nova_symbol
         PRIVATE Boost::container
     )
 endif()
-
 
 ########################################################################################################################
 
