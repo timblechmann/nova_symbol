@@ -50,25 +50,20 @@ if(NOT (TARGET Boost::headers AND TARGET Boost::intrusive AND (NOT APPLE OR TARG
     )
 endif()
 
-if(NOT (TARGET cityhash::cityhash OR TARGET Cityhash))
+if(NOT TARGET rapidhash::rapidhash)
     nova_symbol_install_cpm()
     CPMAddPackage(
-        NAME Cityhash
-        GITHUB_REPOSITORY google/cityhash
-        GIT_TAG master
+        NAME Rapidhash
+        GITHUB_REPOSITORY Nicoshev/rapidhash
+        GIT_TAG rapidhash_v3
         DOWNLOAD_ONLY TRUE
     )
 
-    add_library(cityhash STATIC ${Cityhash_SOURCE_DIR}/src/city.cc)
-
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cmake/cpm_patches/cityhash)
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cmake/cpm_patches/cityhash/config.h "#ifndef CITYHASH_CONFIG_H\n#define CITYHASH_CONFIG_H\n\n// Assume modern system with stdint.h\n#define HAVE_STDINT_H 1\n#define HAVE_BUILTIN_EXPECT 1\n#define HAVE_BUILTIN_CTZ 1\n#define HAVE_BUILTIN_CLZ 1\n#define HAVE_BYTESWAP_H 1\n#define HAVE_SYS_ENDIAN_H 1\n#define PACKAGE_NAME \"cityhash\"\n#define PACKAGE_VERSION \"1.0.1\"\n\n#endif // CITYHASH_CONFIG_H\n")
-
-    target_include_directories(cityhash PUBLIC
-        ${Cityhash_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_BINARY_DIR}/cmake/cpm_patches/cityhash
+    add_library(rapidhash INTERFACE)
+    target_include_directories(rapidhash INTERFACE
+        ${Rapidhash_SOURCE_DIR}
     )
-    add_library(cityhash::cityhash ALIAS cityhash)
+    add_library(rapidhash::rapidhash ALIAS rapidhash)
 endif()
 
 ########################################################################################################################
@@ -84,7 +79,7 @@ add_library(nova_symbol STATIC ${Sources})
 
 target_include_directories(nova_symbol PUBLIC inc)
 target_link_libraries(nova_symbol
-    PRIVATE cityhash::cityhash
+    PRIVATE rapidhash::rapidhash
 )
 
 if (TARGET Boost::headers)

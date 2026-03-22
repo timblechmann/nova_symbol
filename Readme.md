@@ -58,7 +58,7 @@ auto string = fmt::format("{}", sym);
 # Dependencies
 * C++20 (ideally with pmr, boost.container can be used for pmr emulation)
 * Boost (for instrusive hash table and pmr emulation)
-* Cityhash (for string hashing)
+* rapidhash (for string hashing)
 * Catch2 (for unit tests)
 
 # Building

@@ -13,7 +13,7 @@
 
 #include <boost/intrusive/unordered_set.hpp>
 
-#include <city.h>
+#include <rapidhash.h>
 
 namespace nova {
 namespace detail {
@@ -107,7 +107,7 @@ struct hasher
 {
     uint64_t operator()( const std::string_view& sv )
     {
-        return CityHash64( sv.data(), sv.size() );
+        return rapidhash( sv.data(), sv.size() );
     }
 
     uint64_t operator()( const nova::detail::symbol_data& data )
