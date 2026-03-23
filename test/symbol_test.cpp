@@ -39,7 +39,7 @@ TEST_CASE( "symbol" )
         CHECK( !set.contains( b ) );
     }
 
-    SECTION( "containers with lexical comparison" )
+    SECTION( "set with lexical comparison" )
     {
         std::set< nova::symbol, nova::symbol_support::lexical_less > set;
         set.insert( a );
@@ -48,7 +48,21 @@ TEST_CASE( "symbol" )
         CHECK( !set.contains( b ) );
         CHECK( set.contains( "a" ) );
         CHECK( !set.contains( "b" ) );
+    }
 
+    SECTION( "set with hash comparison" )
+    {
+        std::set< nova::symbol, nova::symbol_support::hash_less > set;
+        set.insert( a );
+        CHECK( set.contains( a ) );
+        CHECK( set.contains( a_2 ) );
+        CHECK( !set.contains( b ) );
+        CHECK( set.contains( "a" ) );
+        CHECK( !set.contains( "b" ) );
+    }
+
+    SECTION( "hash table" )
+    {
         std::unordered_set< nova::symbol, nova::symbol_support::lexical_hash, nova::symbol_support::lexical_equal_to >
             unordered_set;
         unordered_set.insert( a );
@@ -59,7 +73,6 @@ TEST_CASE( "symbol" )
         CHECK( !unordered_set.contains( "b" ) );
     }
 }
-
 
 #ifdef __cpp_lib_format
 
