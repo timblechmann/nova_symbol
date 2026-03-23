@@ -1,24 +1,7 @@
 #pragma once
 
-// Copyright (c) 2023 Tim Blechmann
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// SPDX-FileCopyrightText: 2023 Tim Blechmann
+// SPDX-License-Identifier: MIT
 //
 // As a non-binding request, please use this code responsibly and ethically.
 
@@ -42,29 +25,45 @@ struct symbol_data;
 
 //----------------------------------------------------------------------------------------------------------------------
 
+/// @brief Tag type to indicate the string data passed to `symbol` has persistent lifetime.
 struct string_data_in_persistent_memory_t
 {};
 
+/// @brief Tag value for `string_data_in_persistent_memory_t`.
 constexpr inline string_data_in_persistent_memory_t string_data_in_persistent_memory;
 
 //----------------------------------------------------------------------------------------------------------------------
 
+/// @brief Interned string with O(1) copy and comparison.
+///
+/// Symbols are flyweight immutable strings: equal strings share the same backing storage,
+/// so comparison and copying are pointer operations. Construction requires a hash-table
+/// lookup and is therefore slower.
 struct symbol
 {
-    explicit symbol( const std::string_view& );
-    explicit symbol( const std::string_view&, string_data_in_persistent_memory_t );
+    /// @brief Interns `sv`, copying the string data into internal storage.
+    explicit symbol( const std::string_view& sv );
+    /// @brief Interns `sv` without copying; the caller guarantees the data outlives the process.
+    explicit symbol( const std::string_view& sv, string_data_in_persistent_memory_t );
 
     symbol( symbol&& )                 = default;
     symbol& operator=( const symbol& ) = default;
     symbol& operator=( symbol&& )      = default;
     symbol( const symbol& )            = default;
 
+    /// @brief Returns the interned string as a `string_view`.
     explicit operator std::string_view() const;
+    /// @brief Pointer-based comparison; ordering is stable within a process run.
     auto     operator<=>( const symbol& ) const = default; // compare by pointer
 
+    /// @brief Returns the interned string as a `string_view`.
     std::string_view string_view() const;
+    /// @brief Returns the length of the string in bytes.
     size_t           size() const;
+    /// @brief Returns the precomputed hash of this symbol.
     uint64_t         hash() const;
+    /// @brief Computes the hash of an arbitrary string view (same algorithm as symbol internment).
+    /// @note The hash function is an implementation detail and not guaranteed to be stable across library versions or platforms.
     static uint64_t  s_hash( const std::string_view& );
 
 private:
@@ -94,6 +93,7 @@ DEFINE_OPERATOR( != )
 
 namespace symbol_support {
 
+/// @brief Transparent comparator ordering by hash value; suitable for `std::set`/`std::map`.
 struct hash_less
 {
     using is_transparent = std::true_type;
@@ -102,37 +102,25 @@ struct hash_less
     {
         return symbol::s_hash( arg );
     }
-
     static uint64_t hash( const symbol& arg )
     {
         return arg.hash();
-    }
-
-    static bool less_after_hash_equality_hash( const symbol& lhs, const symbol& rhs )
-    {
-        if ( lhs <=> rhs == std::strong_ordering::equal )
-            return false;
-        return std::string_view( lhs ) < std::string_view( rhs );
-    }
-
-    static bool less_after_hash_equality_hash( const auto& lhs, const auto& rhs )
-    {
-        return std::string_view( lhs ) < std::string_view( rhs );
     }
 
     bool operator()( const auto& lhs, const auto& rhs ) const
     {
         auto hash_compare = hash( lhs ) <=> hash( rhs );
 
-        switch ( hash_compare ) {
-        case std::strong_ordering::less:    return true;
-        case std::strong_ordering::greater: return false;
-        case std::strong_ordering::equal:   return compare_equal_hash( lhs, rhs );
-        }
+        if ( hash_compare == std::strong_ordering::less )
+            return true;
+        if ( hash_compare == std::strong_ordering::greater )
+            return false;
+
+        return std::string_view( lhs ) < std::string_view( rhs );
     }
 };
 
-
+/// @brief Transparent comparator using lexical (string) ordering; suitable for `std::set`/`std::map`.
 struct lexical_less
 {
     using is_transparent = std::true_type;
@@ -149,6 +137,7 @@ struct lexical_less
     }
 };
 
+/// @brief Transparent hasher using the same algorithm as symbol internment; for use with `std::unordered_*`.
 struct lexical_hash
 {
     using is_transparent = std::true_type;
@@ -163,6 +152,7 @@ struct lexical_hash
     }
 };
 
+/// @brief Transparent equality predicate using lexical (string) comparison; for use with `std::unordered_*`.
 struct lexical_equal_to
 {
     using is_transparent = std::true_type;
@@ -199,6 +189,11 @@ struct literal_storage
 
 } // namespace detail
 
+/// @brief User-defined literal; returns a `symbol` for a compile-time string constant.
+/// @code
+///   using namespace nova::symbol_literals;
+///   nova::symbol s = "foo"_sym;
+/// @endcode
 template < detail::literal_storage S >
 inline symbol operator""_sym() noexcept
 {

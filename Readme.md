@@ -1,19 +1,22 @@
 # Nova symbol
 
-Symbols are hashed strings, which are found in many programming languages like lisp, smalltalk (or derived/inspired
-languages):
+Symbols are interned, hashed strings, commonly found in programming languages like Lisp, SmallTalk (or derived/inspired
+languages such as Ruby or SuperCollider):
 
-* immutable (flyweight design pattern)
-* small (`sizeof(void*)`)
-* fast to compare and copy (pointer operations)
-* slow-ish to construct (require lookup/insert into hash table)
+* Immutable (flyweight design pattern)
+* Compact (`sizeof(void*)`)
+* Fast to copy and compare (pointer operations)
+* Pre-hashed (hash stored alongside the symbol)
+* Costly to construct from `std::string_view` (requires hashing and interning)
 
 
 ## Example
 
 ```c++
 // signature
-struct nova::symbol
+namespace nova {
+
+struct symbol
 {
     explicit symbol( const std::string_view& );
     explicit symbol( const std::string_view&, string_data_in_persistent_memory_t ); // expects string data to be persistent
@@ -32,6 +35,8 @@ struct nova::symbol
     static uint64_t  s_hash( const std::string_view& );
 };
 
+} // namespace nova
+
 // construction:
 using namespace nova::symbol_literals;      // for _sym
 nova::symbol sym  = "symbol"_sym;           // user-defined literal
@@ -42,7 +47,7 @@ bool equal = sym == sym2;
 bool less  = sym < sym2; // ordering is stable, but not persistent across restarting the process
 
 // (slower) string comparison
-bool equal = sym == "symbol"; // comparing the hash value
+bool equal = sym == "symbol"; // comparing the string value
 
 // support structs:
 struct nova::symbol_support::lexical_less;     // transparent lexical comparison
@@ -68,3 +73,7 @@ cmake -B build
 cmake --build build
 ctest --test-dir build
 ```
+
+## License
+
+MIT — see [LICENSE](LICENSE). As a non-binding request, please use this code responsibly and ethically.

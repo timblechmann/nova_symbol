@@ -17,7 +17,7 @@ add_custom_target(nova_symbol_project_files SOURCES
     .pre-commit-config.yaml
     _clang-format
     Readme.md
-    License.txt
+    LICENSE
     .github/workflows/ci.yml
 )
 

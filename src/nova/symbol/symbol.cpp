@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2023 Tim Blechmann
+// SPDX-License-Identifier: MIT
+
 #include <nova/symbol/symbol.hpp>
 
 #include <array>
