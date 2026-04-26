@@ -9,6 +9,10 @@ if (NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 20)
 endif()
 
+if(NOT CMAKE_MSVC_DEBUG_INFORMATION_FORMAT)
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "Embedded")
+endif()
+
 ########################################################################################################################
 
 add_custom_target(nova_symbol_project_files SOURCES
@@ -144,7 +148,7 @@ if (NOVA_SYMBOL_BUILD_TEST)
         nova_symbol_install_cpm()
         set(CMAKE_UNITY_BUILD ON)
         if(NOT (TARGET Catch2::Catch2WithMain OR TARGET Catch2::Catch2))
-            CPMAddPackage("gh:catchorg/Catch2#v3.11.0")
+            CPMAddPackage("gh:catchorg/Catch2#v3.14.0")
         endif()
         if(NOT TARGET fmt::fmt)
             CPMAddPackage(
