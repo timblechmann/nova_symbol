@@ -121,7 +121,7 @@ struct hasher
 
 struct hasher_with_context
 {
-    uint64_t operator()( const std::string_view& sv ) const
+    uint64_t operator()( const std::string_view& ) const
     {
         return hash;
     }
@@ -198,7 +198,7 @@ public:
         char* string_data = reinterpret_cast< char* >( allocator.allocate_bytes( sv.size(), string_alignment ) );
         std::memcpy( string_data, sv.data(), sv.size() );
 
-        auto obj = allocator.new_object< symbol_data >(
+        auto* obj = allocator.new_object< symbol_data >(
             std::string_view {
                 string_data,
                 sv.size(),
@@ -209,7 +209,7 @@ public:
         std::memcpy( string_data, sv.data(), sv.size() );
 
         void* chunk = allocator.allocate( sizeof( symbol_data ) );
-        auto  obj   = new ( chunk ) symbol_data(
+        auto* obj   = new ( chunk ) symbol_data(
             std::string_view {
                 string_data,
                 sv.size(),
@@ -236,10 +236,10 @@ public:
         };
 
 #ifdef __cpp_lib_memory_resource
-        auto obj = allocator.new_object< symbol_data >( sv, hash, pm );
+        auto* obj = allocator.new_object< symbol_data >( sv, hash, pm );
 #else
         void* chunk = allocator.allocate( sizeof( symbol_data ) );
-        auto  obj   = new ( chunk ) symbol_data( sv, hash, pm );
+        auto* obj   = new ( chunk ) symbol_data( sv, hash, pm );
 #endif
 
         table.insert( *obj );
@@ -278,7 +278,7 @@ private:
     static constexpr size_t preallocated_memory
         = ( sizeof( symbol_data ) + average_symbol_size ) * preallocated_number_of_symbols + allocator_overhead;
 
-    alignas( 128 ) std::array< const char*, preallocated_memory > buffer;
+    alignas( 64 ) std::array< const char*, preallocated_memory > buffer;
     monotonic_buffer_resource memory_resource {
         buffer.data(),
         buffer.size(),
