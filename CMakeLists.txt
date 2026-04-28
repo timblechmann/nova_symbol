@@ -15,15 +15,17 @@ endif()
 
 ########################################################################################################################
 
-add_custom_target(nova_symbol_project_files SOURCES
-    .clang-tidy
-    .gitignore
-    .pre-commit-config.yaml
-    _clang-format
-    Readme.md
-    LICENSE
-    .github/workflows/ci.yml
-)
+if (PROJECT_IS_TOP_LEVEL)
+    add_custom_target(nova_symbol_project_files SOURCES
+        .clang-tidy
+        .gitignore
+        .pre-commit-config.yaml
+        _clang-format
+        Readme.md
+        LICENSE
+        .github/workflows/ci.yml
+    )
+endif()
 
 ########################################################################################################################
 

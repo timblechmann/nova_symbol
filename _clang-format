@@ -91,7 +91,7 @@ NamespaceIndentation: None
 NamespaceMacros: [ MSGPACK_API_VERSION_NAMESPACE ]
 ObjCSpaceAfterProperty: false
 ObjCSpaceBeforeProtocolList: true
-PPIndentWidth: 4
+PPIndentWidth: 2
 PackConstructorInitializers: Never
 PenaltyBreakAssignment: 10
 PenaltyBreakBeforeFirstCallParameter: 100

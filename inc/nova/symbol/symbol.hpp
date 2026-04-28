@@ -12,7 +12,7 @@
 #include <version>
 
 #ifdef __cpp_lib_format
-#    include <format>
+#  include <format>
 #endif
 
 namespace nova {
@@ -231,7 +231,7 @@ struct std::formatter< nova::symbol, char > : std::formatter< std::string_view >
 
 #if __has_include( <fmt/format.h>)
 
-#    include <fmt/format.h>
+#  include <fmt/format.h>
 
 template <>
 struct fmt::formatter< nova::symbol, char > : fmt::formatter< std::string_view >
