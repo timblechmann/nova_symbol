@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.25)
 # Set policies
 cmake_policy(SET CMP0167 NEW) # The FindBoost module is removed
 
-project(nova_symbol VERSION 0.1.0 LANGUAGES CXX)
+project(nova_symbol VERSION 1.0.0 LANGUAGES CXX)
 
 if (NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 20)
@@ -43,12 +43,14 @@ check_cxx_source_compiles([[
 
 function(nova_symbol_install_cpm)
     if (NOT COMMAND CPMAddPackage)
-        set(CPM_DOWNLOAD_VERSION 0.42.1)
+        set(CPM_DOWNLOAD_VERSION 0.42.3)
         if(NOT EXISTS "${CMAKE_BINARY_DIR}/cmake/CPM.cmake")
             message(STATUS "Downloading CPM.cmake ${CPM_DOWNLOAD_VERSION}...")
             file(DOWNLOAD
                 "https://github.com/cpm-cmake/CPM.cmake/releases/download/v${CPM_DOWNLOAD_VERSION}/CPM.cmake"
                 "${CMAKE_BINARY_DIR}/cmake/CPM.cmake"
+                TLS_VERIFY ON
+                EXPECTED_HASH SHA256=a609e875fd532b067174250f6abbc3dac22fe2d64869783fb1e80bda1625c844
             )
         endif()
         include("${CMAKE_BINARY_DIR}/cmake/CPM.cmake")
@@ -83,9 +85,9 @@ if(NOT Boost::headers)
 
     CPMAddPackage(
         NAME Boost
-        VERSION 1.90.0
-        URL https://github.com/boostorg/boost/releases/download/boost-1.90.0/boost-1.90.0-cmake.tar.xz
-        URL_HASH SHA256=aca59f889f0f32028ad88ba6764582b63c916ce5f77b31289ad19421a96c555f
+        VERSION 1.91.0
+        URL https://github.com/boostorg/boost/releases/download/boost-1.91.0-1/boost-1.91.0-1-cmake.tar.xz
+        URL_HASH SHA256=cc5dc5006ecbdf0051f90979be31b4eee5987d9ae14ae9fb9c03cfa43fa3cdad
         OPTIONS "BOOST_SKIP_INSTALL_RULES ON"
                 "BUILD_SHARED_LIBS OFF"
                 ${_boost_include_option}
@@ -144,13 +146,14 @@ endif()
 option(NOVA_SYMBOL_BUILD_TEST "Build unit tests" ON)
 
 if (NOVA_SYMBOL_BUILD_TEST)
+    set(CMAKE_FOLDER "test")
     enable_testing()
 
     block()
         nova_symbol_install_cpm()
         set(CMAKE_UNITY_BUILD ON)
         if(NOT (TARGET Catch2::Catch2WithMain OR TARGET Catch2::Catch2))
-            CPMAddPackage("gh:catchorg/Catch2#v3.14.0")
+            CPMAddPackage("gh:catchorg/Catch2#v3.15.0")
         endif()
         if(NOT TARGET fmt::fmt)
             CPMAddPackage(
